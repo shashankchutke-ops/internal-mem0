@@ -36,4 +36,9 @@ else
 fi
 
 [ -f "$install_dir/setup.sh" ] || die "downloaded repository does not contain setup.sh"
+
+if [ -r /dev/tty ] && ( : </dev/tty ) 2>/dev/null; then
+    exec sh "$install_dir/setup.sh" "$@" </dev/tty
+fi
+
 exec sh "$install_dir/setup.sh" "$@"

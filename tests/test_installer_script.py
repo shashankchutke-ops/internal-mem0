@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import os
 import subprocess
+import fcntl
+import pty
+import termios
 from pathlib import Path
 
 
@@ -92,6 +95,62 @@ def test_installer_does_not_overwrite_non_repository_directory(tmp_path: Path) -
     assert result.returncode != 0
     assert "not a Git checkout" in result.stderr
     assert sentinel.read_text() == "local data"
+
+
+def test_installer_uses_controlling_terminal_for_piped_setup(tmp_path: Path) -> None:
+    assert INSTALLER.exists(), "the public bootstrap installer has not been added yet"
+
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    install_dir = tmp_path / "install"
+    tty_result = tmp_path / "tty-result"
+
+    _write_executable(
+        fake_bin / "git",
+        """#!/bin/sh
+set -eu
+install_dir=$7
+mkdir -p "$install_dir"
+printf '%s\\n' '#!/bin/sh' 'set -eu' '[ -t 0 ] || { echo not-a-tty > "$MEM0_TEST_TTY_RESULT"; exit 1; }' 'IFS= read -r value' 'printf "%s" "$value" > "$MEM0_TEST_TTY_RESULT"' > "$install_dir/setup.sh"
+chmod +x "$install_dir/setup.sh"
+""",
+    )
+
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "PATH": f"{fake_bin}:{environment['PATH']}",
+            "MEM0_INSTALL_DIR": str(install_dir),
+            "MEM0_REPOSITORY_URL": "https://example.invalid/internal-mem0.git",
+            "MEM0_TEST_TTY_RESULT": str(tty_result),
+        }
+    )
+
+    master_fd, slave_fd = pty.openpty()
+    os.write(master_fd, b"terminal-input\n")
+
+    def set_controlling_terminal() -> None:
+        os.setsid()
+        fcntl.ioctl(slave_fd, termios.TIOCSCTTY, 0)
+
+    try:
+        process = subprocess.Popen(
+            [str(INSTALLER)],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            env=environment,
+            pass_fds=(slave_fd,),
+            preexec_fn=set_controlling_terminal,
+        )
+        os.close(slave_fd)
+        stdout, stderr = process.communicate(input="", timeout=10)
+    finally:
+        os.close(master_fd)
+
+    assert process.returncode == 0, f"stdout={stdout}\nstderr={stderr}"
+    assert tty_result.read_text() == "terminal-input"
 
 
 def test_readme_documents_public_bootstrap_command() -> None:
