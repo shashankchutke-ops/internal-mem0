@@ -1,4 +1,48 @@
-# Mem0 MCP bridge for Claude Code and Codex
+# Internal Mem0
+
+This repository contains the complete local deployment used by the team:
+
+- `server/` — standalone Mem0 API, dashboard, PostgreSQL/pgvector Compose stack,
+  migrations, and the embedder-dimension write fix.
+- `bin/` and the root Python package — a local stdio MCP bridge for Claude Code
+  and Codex.
+
+## Self-hosted server
+
+Run the server from the cloned repository:
+
+```bash
+cd ~/src/internal-mem0/server
+cp .env.example .env
+```
+
+Edit `.env` and set `POSTGRES_PASSWORD`, `JWT_SECRET`, and the API key for the
+LLM/embedder provider you use. Then start the API, dashboard, and private
+PostgreSQL/pgvector service:
+
+```bash
+docker compose up -d --build
+```
+
+The local endpoints are:
+
+```text
+API:       http://localhost:8888
+Dashboard: http://localhost:3000
+```
+
+The Compose file does not publish PostgreSQL to the host. If using Cloudflare
+Tunnel, route the API hostname to `http://localhost:8888` and the dashboard
+hostname to `http://localhost:3000`; do not route the database. For a fresh
+install, use `make bootstrap` or complete the browser setup at the dashboard.
+
+The API normalizes the bundled embedder output to the pgvector column dimension
+when no dimension is explicitly configured, so changing providers through the
+dashboard does not leave reads working while writes fail with a vector-size
+mismatch. See [`server/README.md`](server/README.md) for server operations,
+backups, and production notes.
+
+## MCP bridge for Claude Code and Codex
 
 This package is a local stdio MCP bridge for the self-hosted Mem0 REST API. It
 keeps the API key in macOS Keychain and sends requests to the configured Mem0

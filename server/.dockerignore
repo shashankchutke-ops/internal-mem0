@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+.git/
+history/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+dashboard/node_modules/
+dashboard/.next/

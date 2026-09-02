@@ -3,3 +3,9 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Self-hosted server runtime and generated dashboard files
+server/.env
+server/history/
+server/dashboard/node_modules/
+server/dashboard/.next/
