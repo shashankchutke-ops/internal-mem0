@@ -157,5 +157,5 @@ def test_readme_documents_public_bootstrap_command() -> None:
     readme = (MCP_ROOT / "README.md").read_text()
 
     assert (
-        "curl -fsSL https://raw.githubusercontent.com/shashankchutke-ops/internal-mem0/main/install.sh | sh" in readme
+        "curl -fsSL https://github.com/shashankchutke-ops/internal-mem0/raw/refs/heads/main/install.sh | sh" in readme
     )

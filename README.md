@@ -59,7 +59,7 @@ After this repository is public, a new MacBook can bootstrap itself without a
 manual `git clone`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/shashankchutke-ops/internal-mem0/main/install.sh | sh
+curl -fsSL https://github.com/shashankchutke-ops/internal-mem0/raw/refs/heads/main/install.sh | sh
 ```
 
 The installer downloads the repository into `~/src/internal-mem0`, then runs
@@ -67,7 +67,7 @@ the normal setup script. It prompts for the teammate name and Mem0 API key.
 For a shared namespace, pass the option through to the setup script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/shashankchutke-ops/internal-mem0/main/install.sh | sh -s -- --user-id juner-team
+curl -fsSL https://github.com/shashankchutke-ops/internal-mem0/raw/refs/heads/main/install.sh | sh -s -- --user-id juner-team
 ```
 
 If the repository is private or you prefer to inspect the files first, clone
