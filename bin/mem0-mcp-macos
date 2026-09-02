@@ -1,0 +1,31 @@
+#!/bin/sh
+set -eu
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+project_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
+keychain_service="${MEM0_KEYCHAIN_SERVICE:-mem0-self-hosted-api-key}"
+keychain_account="${MEM0_KEYCHAIN_ACCOUNT:-${USER:-}}"
+
+if [ -z "${MEM0_API_KEY:-}" ]; then
+    if ! command -v security >/dev/null 2>&1; then
+        echo "macOS security command is unavailable; set MEM0_API_KEY or use macOS Keychain." >&2
+        exit 1
+    fi
+    if [ -z "$keychain_account" ]; then
+        echo "MEM0_KEYCHAIN_ACCOUNT or USER must be set to read the Mem0 API key." >&2
+        exit 1
+    fi
+    MEM0_API_KEY=$(security find-generic-password -a "$keychain_account" -s "$keychain_service" -w 2>/dev/null || true)
+    if [ -z "$MEM0_API_KEY" ]; then
+        echo "No Mem0 API key found in the macOS Keychain." >&2
+        echo "Store it with service '$keychain_service' before starting the MCP server." >&2
+        exit 1
+    fi
+    export MEM0_API_KEY
+fi
+
+export MEM0_API_URL="${MEM0_API_URL:-https://mem0.shashawk.com}"
+: "${MEM0_USER_ID:?MEM0_USER_ID must be set}"
+: "${MEM0_AGENT_ID:?MEM0_AGENT_ID must be set}"
+
+exec "${UV_BIN:-uv}" run --project "$project_dir" mem0-mcp
